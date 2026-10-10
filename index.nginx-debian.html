@@ -1,25 +1,821 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<title>Welcome to nginx!</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>英雄谱 · 王者荣耀全英雄金石图鉴</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@600;700;900&display=swap" rel="stylesheet">
 <style>
-html { color-scheme: light dark; }
-body { width: 35em; margin: 0 auto;
-font-family: Tahoma, Verdana, Arial, sans-serif; }
+:root{
+  /* 墨玉青黑的金石世界：四槽色板，强调只给鎏金 */
+  --canvas:#0B100E;        /* 墨玉主底，带青相，非纯黑 */
+  --canvas-2:#0E1512;      /* 面板 */
+  --world:#121E19;         /* 世界色：青铜暗绿深色段 */
+  --world-2:#17271F;
+  --gold:#C9A35B;          /* 鎏金 · 唯一强调色 */
+  --gold-bright:#E6CB8E;
+  --ink:#EFE7D6;           /* 暖白文字 */
+  --ink-soft:#B6AE9C;
+  --muted:#82877E;
+  --line:rgba(201,163,91,.20);
+  --line-2:rgba(239,231,214,.10);
+  /* 六职色：只做信息编码（印章/徽标/分布条），面积克制 */
+  --c-tank:#B0895A; --c-warrior:#C24A3E; --c-assassin:#9A6FC0;
+  --c-mage:#5B87B8; --c-marks:#76A86B; --c-support:#63B3A6;
+
+  --gut:clamp(20px,3.4vw,60px);
+  --ease:cubic-bezier(.22,.61,.36,1);
+  --serif:"Noto Serif SC","Songti SC","STSong","SimSun",serif;
+  --sans:"Noto Sans SC","PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;
+  --latin:"Cinzel","Noto Serif SC",Georgia,serif;
+  /* 圆角角色：碑刻近直角，仅可点之物为胶囊 */
+  --r-shell:2px; --r-card:3px; --r-control:4px;
+  --shadow-deep:0 30px 80px -30px rgba(0,0,0,.85), inset 0 1px 0 rgba(255,255,255,.05);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--canvas);color:var(--ink);font-family:var(--sans);
+  font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body.locked{overflow:hidden}
+img{display:block;max-width:100%}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+button,a[href]{min-height:24px}
+::selection{background:var(--gold);color:#100F0A}
+.ic{width:1em;height:1em;fill:currentColor;flex:none}
+.serif{font-family:var(--serif)}
+.latin{font-family:var(--latin);letter-spacing:.18em}
+.kicker{font-family:var(--latin);font-size:11px;letter-spacing:.34em;color:var(--gold);
+  text-transform:uppercase;display:inline-flex;align-items:center;gap:14px}
+.kicker::before{content:"";width:34px;height:1px;background:var(--gold);opacity:.7}
+.wrap{padding-inline:var(--gut)}
+.rule{height:1px;background:var(--line-2);width:100%}
+
+/* ============ NAV ============ */
+header{position:fixed;inset:0 0 auto 0;z-index:80;display:flex;align-items:center;
+  justify-content:space-between;gap:24px;padding:22px var(--gut);color:var(--ink);
+  border-bottom:1px solid transparent;transition:padding .4s var(--ease),background .4s var(--ease),border-color .4s}
+header.solid{background:rgba(11,16,14,.86);backdrop-filter:blur(14px) saturate(1.3);
+  padding:12px var(--gut);border-bottom-color:var(--line)}
+.brand{display:flex;align-items:center;gap:12px}
+.seal{width:38px;height:38px;border:1.5px solid var(--gold);color:var(--gold);
+  display:grid;place-items:center;font-family:var(--serif);font-weight:900;font-size:20px;
+  border-radius:var(--r-control);position:relative;background:rgba(201,163,91,.06)}
+.seal::after{content:"";position:absolute;inset:3px;border:1px solid rgba(201,163,91,.35);border-radius:2px}
+.brand b{font-family:var(--serif);font-weight:900;font-size:21px;letter-spacing:.12em}
+.brand span{font-family:var(--latin);font-size:10px;letter-spacing:.3em;color:var(--muted);display:block;margin-top:2px}
+nav.navlinks{display:flex;gap:30px}
+nav.navlinks a{font-size:13.5px;letter-spacing:.08em;color:var(--ink-soft);position:relative;padding-block:4px;transition:color .3s}
+nav.navlinks a:hover{color:var(--gold-bright)}
+nav.navlinks a::after{content:"";position:absolute;left:0;bottom:0;height:1.5px;width:0;background:var(--gold);transition:width .35s var(--ease)}
+nav.navlinks a:hover::after{width:100%}
+.nav-cta{display:inline-flex;align-items:center;gap:9px;border:1px solid var(--gold);color:var(--gold-bright);
+  border-radius:999px;padding:9px 18px;font-size:12.5px;letter-spacing:.1em;transition:all .3s var(--ease)}
+.nav-cta:hover{background:var(--gold);color:#14110A}
+@media(max-width:920px){nav.navlinks{display:none}}
+
+/* ============ HERO ============ */
+.hero{position:relative;min-height:100svh;display:flex;align-items:flex-end;overflow:hidden;background:#0A0E0C}
+.hero-media{position:absolute;inset:-6% 0;z-index:0}
+.hero-media img{width:100%;height:100%;object-fit:cover;object-position:50% 42%;
+  transform:scale(1.06);animation:heroIn 2.6s var(--ease) both}
+@keyframes heroIn{from{transform:scale(1.18);opacity:.25}to{transform:scale(1.06);opacity:1}}
+.hero::after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:
+    linear-gradient(90deg,rgba(8,12,10,.94) 0%,rgba(8,12,10,.78) 34%,rgba(8,12,10,.34) 62%,rgba(8,12,10,.62) 100%),
+    linear-gradient(180deg,rgba(8,12,10,.55) 0%,rgba(8,12,10,.05) 30%,rgba(8,12,10,.35) 66%,rgba(9,13,11,.96) 100%)}
+.hero-floats{position:absolute;z-index:2;right:var(--gut);top:50%;transform:translateY(-50%);
+  width:min(38vw,520px);height:74vh;display:none}
+@media(min-width:1180px){.hero-floats{display:block}}
+.hf{position:absolute;border:1px solid var(--line);border-radius:var(--r-card);overflow:hidden;
+  box-shadow:0 30px 70px -30px rgba(0,0,0,.9),inset 0 1px 0 rgba(255,255,255,.08);background:var(--world)}
+.hf img{width:100%;height:100%;object-fit:cover;object-position:center 18%;filter:saturate(1.05)}
+.hf figcaption{position:absolute;left:0;right:0;bottom:0;padding:16px 14px 12px;
+  background:linear-gradient(180deg,transparent,rgba(6,9,8,.92));font-family:var(--serif)}
+.hf figcaption b{font-size:17px;font-weight:700;letter-spacing:.08em}
+.hf figcaption i{font-style:normal;display:block;font-size:11px;color:var(--gold);letter-spacing:.14em;margin-top:2px}
+.hf-1{width:46%;height:60%;right:30%;top:2%;transform:rotate(2.5deg)}
+.hf-2{width:52%;height:66%;right:0;top:24%;transform:rotate(-3deg);border-color:rgba(201,163,91,.45)}
+.hf-3{width:40%;height:52%;right:48%;bottom:2%;transform:rotate(1.5deg)}
+.hero-inner{position:relative;z-index:3;padding:0 var(--gut) clamp(96px,13vh,150px);width:100%;max-width:1500px;margin:0 auto}
+.hero-title{font-family:var(--serif);font-weight:900;line-height:.94;margin:26px 0 0;
+  font-size:clamp(64px,11.5vw,172px);letter-spacing:.06em}
+.hero-title .accent{color:var(--gold);position:relative}
+.hero-en{font-family:var(--latin);font-weight:600;font-size:clamp(13px,1.5vw,20px);letter-spacing:.52em;
+  color:var(--gold-bright);margin-top:18px;opacity:.92}
+.hero-sub{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:30px 50px;margin-top:34px;max-width:1100px}
+.hero-sub p{flex:1 1 340px;max-width:46ch;color:var(--ink-soft);font-size:15.5px;line-height:1.9}
+.hero-sub p b{color:var(--gold-bright);font-weight:500}
+.cta-row{display:flex;gap:12px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:11px;border-radius:999px;padding:15px 28px;font-size:14px;
+  font-weight:500;letter-spacing:.08em;transition:transform .35s var(--ease),background .3s,color .3s,border-color .3s}
+.btn:hover{transform:translateY(-2px)}
+.btn-gold{background:var(--gold);color:#16130B;font-weight:700}
+.btn-gold:hover{background:var(--gold-bright)}
+.btn-ghost{border:1px solid rgba(239,231,214,.4);color:var(--ink)}
+.btn-ghost:hover{background:var(--ink);color:#14110A;border-color:var(--ink)}
+.hero-stats{display:flex;gap:clamp(24px,4vw,60px);margin-top:46px;flex-wrap:wrap}
+.hstat b{font-family:var(--latin);font-weight:700;font-size:clamp(28px,3.4vw,46px);color:var(--ink);line-height:1;display:block}
+.hstat b i{font-style:normal;color:var(--gold)}
+.hstat span{display:block;margin-top:9px;font-size:11px;letter-spacing:.22em;color:var(--muted);text-transform:uppercase}
+
+/* ============ MARQUEE ============ */
+.marquee{background:var(--world);border-block:1px solid var(--line);overflow:hidden;padding:16px 0}
+.marquee-track{display:flex;width:max-content;animation:mq 60s linear infinite}
+.marquee:hover .marquee-track{animation-play-state:paused}
+@keyframes mq{to{transform:translateX(-50%)}}
+.marquee-track span{display:inline-flex;align-items:center;white-space:nowrap;padding-right:0;
+  font-family:var(--serif);font-size:16px;letter-spacing:.1em;color:var(--ink-soft)}
+.marquee-track b{color:var(--gold-bright);font-weight:600;margin:0 14px 0 34px}
+.marquee-track i{font-style:normal;color:var(--gold);margin-right:34px}
+
+/* ============ SECTION HEAD ============ */
+section{position:relative}
+.sec-head{display:flex;align-items:flex-end;justify-content:space-between;gap:28px;flex-wrap:wrap;
+  padding-block:clamp(64px,8vw,104px) 30px}
+.sec-head h2{font-family:var(--serif);font-weight:900;font-size:clamp(32px,4.6vw,62px);
+  line-height:1.02;letter-spacing:.04em;margin-top:20px}
+.sec-head h2 em{font-style:normal;color:var(--gold)}
+.sec-head .note{max-width:38ch;font-size:14px;color:var(--ink-soft);line-height:1.8}
+.sec-head .count{font-family:var(--latin);color:var(--gold);letter-spacing:.2em;font-size:13px}
+
+/* ============ ROLES ============ */
+.roles-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;padding-bottom:20px}
+.role{position:relative;background:linear-gradient(160deg,var(--world) 0%,var(--canvas-2) 100%);
+  border:1px solid var(--line-2);border-radius:var(--r-shell);padding:26px 24px 22px;overflow:hidden;
+  transition:transform .4s var(--ease),border-color .4s;cursor:pointer;display:flex;flex-direction:column;min-height:272px}
+.role::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:var(--rc)}
+.role:hover{transform:translateY(-5px);border-color:var(--line)}
+.role-top{display:flex;align-items:center;gap:14px}
+.role-seal{width:52px;height:52px;display:grid;place-items:center;border-radius:var(--r-control);
+  font-family:var(--serif);font-weight:900;font-size:26px;color:#120F0A;background:var(--rc);
+  box-shadow:0 8px 22px -10px var(--rc)}
+.role-top h3{font-family:var(--serif);font-weight:900;font-size:25px;letter-spacing:.1em}
+.role-top .en{font-family:var(--latin);font-size:10px;letter-spacing:.26em;color:var(--muted);display:block;margin-top:3px}
+.role-num{margin-left:auto;text-align:right}
+.role-num b{font-family:var(--latin);font-size:32px;color:var(--ink);line-height:1}
+.role-num span{font-size:10px;color:var(--muted);letter-spacing:.16em}
+.role p{font-size:13px;line-height:1.85;color:var(--ink-soft);margin:16px 0 18px;flex:1}
+.role-reps{display:flex;align-items:center;gap:8px}
+.role-reps img{width:38px;height:38px;border-radius:999px;object-fit:cover;border:1px solid var(--line);
+  background:var(--world-2);transition:transform .3s var(--ease),border-color .3s}
+.role-reps img:hover{transform:scale(1.12);border-color:var(--rc)}
+.role-go{margin-top:16px;display:inline-flex;align-items:center;gap:8px;font-size:12.5px;letter-spacing:.12em;
+  color:var(--gold-bright);padding-top:14px;border-top:1px solid var(--line-2)}
+.role-go .ic{transition:transform .3s var(--ease)}
+.role:hover .role-go .ic{transform:translateX(4px)}
+
+/* ============ ARCHIVE TOOLBAR ============ */
+.toolbar{position:sticky;top:0;z-index:50;background:rgba(11,16,14,.92);backdrop-filter:blur(12px);
+  border-top:1px solid rgba(201,163,91,.35);border-bottom:1px solid var(--line-2);
+  box-shadow:0 8px 30px rgba(0,0,0,.45);padding:16px 0;margin-top:6px}
+.toolbar-inner{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.search{flex:1 1 220px;min-width:200px;display:flex;align-items:center;gap:10px;background:var(--world);
+  border:1px solid var(--line-2);border-radius:999px;padding:10px 18px;color:var(--muted)}
+.search:focus-within{border-color:var(--gold);color:var(--gold)}
+.search input{flex:1;background:none;border:0;outline:none;color:var(--ink);font:inherit;font-size:14px}
+.search input::placeholder{color:var(--muted)}
+.chips{display:flex;gap:7px;flex-wrap:wrap}
+.chip{border:1px solid var(--line-2);border-radius:999px;padding:9px 16px;font-size:13px;letter-spacing:.04em;
+  color:var(--ink-soft);display:inline-flex;align-items:center;gap:7px;transition:all .25s var(--ease)}
+.chip .n{font-family:var(--latin);font-size:10px;opacity:.7}
+.chip:hover{border-color:var(--gold);color:var(--ink)}
+.chip[aria-pressed="true"]{background:var(--gold);border-color:var(--gold);color:#16130B;font-weight:700}
+.chip[aria-pressed="true"] .n{opacity:.8}
+.sortsel{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted)}
+.sortsel select{background:var(--world);color:var(--ink);border:1px solid var(--line-2);border-radius:var(--r-control);
+  padding:9px 12px;font:inherit;font-size:13px;outline:none;cursor:pointer}
+.result-note{font-size:12.5px;color:var(--muted);letter-spacing:.06em;padding:18px 2px 4px}
+.result-note b{color:var(--gold-bright);font-family:var(--latin)}
+
+/* ============ HERO GRID ============ */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(236px,1fr));gap:11px;padding-block:14px 30px}
+.card{position:relative;border-radius:var(--r-card);overflow:hidden;background:var(--world);
+  border:1px solid var(--line-2);cursor:pointer;text-align:left;
+  transition:transform .4s var(--ease),border-color .4s,box-shadow .4s;
+  animation:cardIn .7s var(--ease) both;animation-delay:var(--d,0ms)}
+@keyframes cardIn{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+.card:hover{transform:translateY(-5px);border-color:var(--gold);
+  box-shadow:0 26px 60px -28px rgba(0,0,0,.9),0 0 0 1px rgba(201,163,91,.35)}
+.card-media{position:relative;aspect-ratio:16/10.5;overflow:hidden;background:var(--world-2)}
+.card-media img.poster{width:100%;height:100%;object-fit:cover;object-position:center 22%;
+  transition:transform .9s var(--ease),filter .5s}
+.card:hover .card-media img.poster{transform:scale(1.07)}
+.card-media::after{content:"";position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(8,11,9,.12) 30%,rgba(8,11,9,.05) 45%,rgba(8,11,9,.92) 100%)}
+.badge-role{position:absolute;top:10px;left:10px;z-index:2;width:30px;height:30px;display:grid;place-items:center;
+  font-family:var(--serif);font-weight:900;font-size:15px;color:#120F0A;background:var(--rc);border-radius:var(--r-control)}
+.badge-skin{position:absolute;top:10px;right:10px;z-index:2;font-family:var(--latin);font-size:10px;letter-spacing:.1em;
+  color:var(--ink);background:rgba(8,11,9,.62);border:1px solid var(--line);border-radius:999px;padding:4px 9px}
+.card-fallback{position:absolute;inset:0;display:none;place-items:center;font-family:var(--serif);
+  font-weight:900;font-size:40px;color:var(--gold);letter-spacing:.1em;background:radial-gradient(circle at 50% 30%,var(--world-2),var(--canvas))}
+.card-media.noimg img.poster{display:none}.card-media.noimg .card-fallback{display:grid}
+.card-body{position:absolute;left:0;right:0;bottom:0;z-index:2;padding:30px 14px 12px}
+.card-body h3{font-family:var(--serif);font-weight:900;font-size:19px;letter-spacing:.08em;line-height:1.1}
+.card-body .ti{font-size:11.5px;color:var(--gold);letter-spacing:.12em;margin-top:3px;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
+.card-view{position:absolute;left:14px;bottom:64px;z-index:3;display:inline-flex;align-items:center;gap:7px;
+  font-size:11.5px;letter-spacing:.14em;color:var(--ink);opacity:0;transform:translateY(8px);
+  transition:opacity .35s var(--ease),transform .35s var(--ease)}
+.card:hover .card-view{opacity:1;transform:translateY(0)}
+.empty-state{display:none;text-align:center;padding:90px 20px;border:1px dashed var(--line);border-radius:var(--r-shell);margin:14px 0 40px}
+.empty-state.show{display:block}
+.empty-state .seal{margin:0 auto 22px;width:56px;height:56px;font-size:28px}
+.empty-state h3{font-family:var(--serif);font-size:24px;margin-bottom:10px}
+.empty-state p{color:var(--muted);font-size:14px;margin-bottom:24px}
+
+/* ============ DETAIL MODAL ============ */
+.scrim{position:fixed;inset:0;z-index:90;background:rgba(5,8,7,.72);backdrop-filter:blur(4px);
+  opacity:0;pointer-events:none;transition:opacity .4s var(--ease)}
+.scrim.on{opacity:1;pointer-events:auto}
+.modal{position:fixed;z-index:100;left:50%;top:50%;transform:translate(-50%,-46%);width:min(1060px,94vw);
+  max-height:92vh;overflow-y:auto;background:var(--canvas-2);border:1px solid var(--line);
+  border-radius:var(--r-shell);box-shadow:var(--shadow-deep);opacity:0;pointer-events:none;
+  transition:opacity .4s var(--ease),transform .4s var(--ease)}
+.modal.on{opacity:1;pointer-events:auto;transform:translate(-50%,-50%)}
+.modal-hero{position:relative;aspect-ratio:1920/760;overflow:hidden;background:var(--world);border-bottom:1px solid var(--line)}
+.modal-hero img{width:100%;height:100%;object-fit:cover;object-position:center 26%}
+.modal-hero::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,11,9,.35),rgba(8,11,9,.1) 40%,rgba(11,16,14,.95))}
+.modal-close{position:absolute;top:16px;right:16px;z-index:5;width:44px;height:44px;border-radius:999px;
+  background:rgba(8,11,9,.6);border:1px solid var(--line);display:grid;place-items:center;color:var(--ink);
+  font-size:20px;transition:all .3s}
+.modal-close:hover{background:var(--gold);color:#14110A;border-color:var(--gold)}
+.skin-arrow{position:absolute;top:50%;z-index:5;width:46px;height:46px;margin-top:-23px;border-radius:999px;
+  background:rgba(8,11,9,.55);border:1px solid var(--line);display:grid;place-items:center;color:var(--ink);transition:all .3s}
+.skin-arrow:hover{background:var(--gold);color:#14110A}
+.skin-arrow.prev{left:16px}.skin-arrow.next{right:16px}
+body.modal-open > *:not(.modal):not(.scrim){display:none}
+.skin-name{position:absolute;z-index:4;top:18px;left:20px;font-family:var(--serif);color:var(--gold-bright);
+  font-size:15px;letter-spacing:.14em;text-shadow:0 2px 14px rgba(0,0,0,.7)}
+.modal-name{position:absolute;z-index:4;left:24px;right:24px;bottom:18px;display:flex;align-items:flex-end;gap:18px;flex-wrap:wrap}
+.modal-name h3{font-family:var(--serif);font-weight:900;font-size:clamp(34px,5vw,58px);line-height:1;letter-spacing:.06em}
+.modal-name .ti{font-family:var(--serif);color:var(--gold);font-size:clamp(15px,2vw,20px);letter-spacing:.16em;
+  padding-bottom:6px}
+.modal-body{padding:26px clamp(20px,3vw,36px) 32px}
+.meta-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--line-2);
+  border:1px solid var(--line-2);border-radius:var(--r-control);overflow:hidden;margin-bottom:22px}
+.meta-cell{background:var(--canvas-2);padding:16px 18px}
+.meta-cell .k{font-size:11px;letter-spacing:.18em;color:var(--muted);text-transform:uppercase;display:flex;align-items:center;gap:7px;margin-bottom:9px}
+.meta-cell .v{font-family:var(--serif);font-size:17px;color:var(--ink);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.role-chip{display:inline-flex;align-items:center;gap:6px;font-size:13px;padding:3px 11px;border-radius:999px;
+  border:1px solid var(--rc);color:var(--rc);font-family:var(--sans)}
+.role-chip .dot{width:7px;height:7px;border-radius:50%;background:var(--rc)}
+.lane-chip{font-size:12.5px;color:var(--ink-soft);border:1px solid var(--line-2);border-radius:999px;padding:3px 11px}
+.desc{font-size:14.5px;line-height:1.95;color:var(--ink-soft);border-left:2px solid var(--gold);padding-left:18px;margin-bottom:26px}
+.skin-gallery-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px}
+.skin-gallery-head h4{font-family:var(--serif);font-size:18px;letter-spacing:.1em}
+.skin-gallery-head h4 b{color:var(--gold);font-family:var(--latin)}
+.skin-gallery-head span{font-size:12px;color:var(--muted)}
+.skin-rail{display:flex;gap:10px;overflow-x:auto;padding-bottom:12px;scroll-snap-type:x mandatory}
+.skin-rail::-webkit-scrollbar{height:5px}.skin-rail::-webkit-scrollbar-thumb{background:var(--line)}
+.skin-thumb{flex:0 0 168px;scroll-snap-align:start;cursor:pointer;border-radius:var(--r-control);overflow:hidden;
+  border:2px solid transparent;position:relative;background:var(--world)}
+.skin-thumb[aria-current="true"]{border-color:var(--gold)}
+.skin-thumb img{width:100%;aspect-ratio:16/9;object-fit:cover;object-position:center 20%}
+.skin-thumb span{display:block;font-size:11px;padding:7px 8px;line-height:1.35;color:var(--ink-soft);white-space:normal;background:var(--world)}
+.skin-thumb[aria-current="true"] span{color:var(--gold-bright)}
+.modal-foot{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  margin-top:26px;padding-top:22px;border-top:1px solid var(--line-2)}
+.pager{display:flex;gap:10px}
+.pager button{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line-2);border-radius:999px;
+  padding:10px 18px;font-size:13px;color:var(--ink-soft);transition:all .3s}
+.pager button:hover{border-color:var(--gold);color:var(--gold-bright)}
+.official{display:inline-flex;align-items:center;gap:9px;background:var(--gold);color:#16130B;font-weight:700;
+  border-radius:999px;padding:12px 22px;font-size:13.5px;letter-spacing:.06em;transition:transform .3s var(--ease)}
+.official:hover{transform:translateY(-2px)}
+
+/* ============ DATA BAND ============ */
+.databand{position:relative;margin-top:clamp(70px,9vw,120px);overflow:hidden;border-block:1px solid var(--line)}
+.databand-media{position:absolute;inset:-6% 0;z-index:0}
+.databand-media img{width:100%;height:112%;object-fit:cover;object-position:center 40%}
+.databand::after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:linear-gradient(180deg,rgba(9,13,11,.94),rgba(9,13,11,.82) 40%,rgba(9,13,11,.95))}
+.databand-inner{position:relative;z-index:2;padding:clamp(70px,9vw,120px) var(--gut)}
+.databand h2{font-family:var(--serif);font-weight:900;font-size:clamp(30px,4.4vw,58px);letter-spacing:.04em;margin:18px 0 12px}
+.databand .lead{color:var(--ink-soft);max-width:50ch;font-size:14.5px;line-height:1.9;margin-bottom:44px}
+.bignums{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1px;background:var(--line-2);
+  border:1px solid var(--line-2);border-radius:var(--r-shell);overflow:hidden;margin-bottom:54px}
+.bignum{background:rgba(18,30,25,.55);padding:30px 26px;backdrop-filter:blur(3px)}
+.bignum b{font-family:var(--latin);font-weight:700;font-size:clamp(40px,5vw,64px);color:var(--gold-bright);line-height:1;display:block}
+.bignum span{display:block;margin-top:12px;font-size:12.5px;letter-spacing:.16em;color:var(--ink-soft)}
+.data-cols{display:grid;grid-template-columns:1.1fr .9fr;gap:clamp(30px,5vw,70px);align-items:start}
+@media(max-width:880px){.data-cols{grid-template-columns:1fr}}
+.dist h4,.topskin h4{font-family:var(--serif);font-size:18px;letter-spacing:.1em;margin-bottom:22px}
+.dist-row{display:grid;grid-template-columns:64px 1fr 46px;align-items:center;gap:14px;margin-bottom:15px}
+.dist-row .dn{font-family:var(--serif);font-size:15px;color:var(--ink);display:flex;align-items:center;gap:8px}
+.dist-row .dn .dot{width:9px;height:9px;border-radius:2px;background:var(--rc)}
+.dist-track{height:9px;background:rgba(255,255,255,.06);border-radius:999px;overflow:hidden}
+.dist-fill{height:100%;width:var(--w);background:var(--rc);border-radius:999px;animation:growW 1.1s var(--ease) both}
+@keyframes growW{from{width:0}to{width:var(--w)}}
+.dist-row .dv{font-family:var(--latin);font-size:15px;color:var(--gold-bright);text-align:right}
+.topskin-list{display:flex;flex-direction:column;gap:2px}
+.ts-row{display:flex;align-items:center;gap:14px;padding:11px 8px;border-bottom:1px solid var(--line-2)}
+.ts-row img{width:42px;height:42px;border-radius:var(--r-control);object-fit:cover;border:1px solid var(--line);background:var(--world)}
+.ts-row .rk{font-family:var(--latin);color:var(--gold);width:22px;font-size:14px}
+.ts-row .nm{font-family:var(--serif);font-size:16px}
+.ts-row .nm small{display:block;font-family:var(--sans);font-size:11px;color:var(--muted);letter-spacing:.08em}
+.ts-row .ct{margin-left:auto;font-family:var(--latin);color:var(--gold-bright);font-size:15px}
+
+/* ============ FOOTER ============ */
+footer{position:relative;background:var(--world);padding:80px var(--gut) 30px;overflow:hidden}
+.foot-grid{display:grid;grid-template-columns:1.7fr repeat(3,1fr);gap:38px;padding-bottom:46px;
+  border-bottom:1px solid var(--line-2)}
+@media(max-width:820px){.foot-grid{grid-template-columns:1fr 1fr}}
+.foot-grid h4{font-family:var(--latin);font-size:11px;letter-spacing:.22em;color:var(--gold);margin-bottom:16px}
+.foot-grid p{font-size:13.5px;color:var(--ink-soft);line-height:1.9;max-width:38ch}
+.foot-grid a{display:block;padding:5px 0;font-size:13.5px;color:var(--ink-soft);transition:color .25s}
+.foot-grid a:hover{color:var(--gold-bright)}
+.wordmark{font-family:var(--serif);font-weight:900;font-size:clamp(80px,18vw,280px);line-height:.78;
+  color:rgba(201,163,91,.07);letter-spacing:.1em;margin:36px 0 -10px;user-select:none;text-align:center}
+.foot-legal{display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;padding-top:24px;
+  font-size:11.5px;letter-spacing:.04em;color:var(--muted);line-height:1.8}
+
+/* ============ reveal / reduced motion ============ */
+.rv{opacity:0;transform:translateY(26px);transition:opacity .9s var(--ease),transform .9s var(--ease)}
+.rv.in{opacity:1;transform:none}
+@media(prefers-reduced-motion:reduce){
+  *{animation:none!important;transition-duration:.01ms!important}
+  .rv,.card{opacity:1!important;transform:none!important}
+  .hero-media img{transform:none}
+}
 </style>
 </head>
 <body>
-<h1>Welcome to nginx!</h1>
-<h2>小郭是gay</h2>
-<p>If you see this page, the nginx web server is successfully installed and
-working. Further configuration is required.</p>
 
-<p>For online documentation and support please refer to
-<a href="http://nginx.org/">nginx.org</a>.<br/>
-Commercial support is available at
-<a href="http://nginx.com/">nginx.com</a>.</p>
+<header id="nav">
+  <a class="brand" href="#top">
+    <span class="seal">王</span>
+    <span><b>英雄谱</b><span>HEROES CODEX</span></span>
+  </a>
+  <nav class="navlinks">
+    <a href="#roles">六职图鉴</a>
+    <a href="#heroes">全英雄档案</a>
+    <a href="#data">谱录数据</a>
+  </nav>
+  <a class="nav-cta" href="#heroes">
+    <svg class="ic" width="16" height="16" viewBox="0 0 256 256"><path d="M232.49,215.51,185,168a92.12,92.12,0,1,0-17,17l47.53,47.54a12,12,0,0,0,17-17ZM44,112a68,68,0,1,1,68,68A68.07,68.07,0,0,1,44,112Z"/></svg>
+    检索英雄
+  </a>
+</header>
 
-<p><em>Thank you for using nginx.</em></p>
+<!-- HERO -->
+<section class="hero" id="top">
+  <div class="hero-media"><img src="https://aka.doubaocdn.com/s/CvaRRwDTVs" alt="云海之上的古代王城，鎏金曙光洒落峡谷"></div>
+  <div class="hero-floats" aria-hidden="true" data-decor>
+    <figure class="hf hf-1" data-speed="0.05"><img id="hf1" alt=""><figcaption><b id="hfn1"></b><i id="hft1"></i></figcaption></figure>
+    <figure class="hf hf-2" data-speed="0.12"><img id="hf2" alt=""><figcaption><b id="hfn2"></b><i id="hft2"></i></figcaption></figure>
+    <figure class="hf hf-3" data-speed="0.03"><img id="hf3" alt=""><figcaption><b id="hfn3"></b><i id="hft3"></i></figcaption></figure>
+  </div>
+  <div class="hero-inner">
+    <span class="kicker">Honor of Kings · 王者荣耀</span>
+    <h1 class="hero-title">英雄<span class="accent">谱</span></h1>
+    <div class="hero-en">HEROES&nbsp;&nbsp;CODEX</div>
+    <div class="hero-sub">
+      <p>一卷可检索的金石英雄档案——<b id="hHeroes">133</b> 位英雄、<b>六大职业</b>、<b id="hSkins">862</b> 套皮肤，
+        按职业、分路与名号编录。点开任一令牌，即可翻阅其高清皮肤长卷。</p>
+      <div class="cta-row">
+        <a class="btn btn-gold" href="#heroes">翻阅英雄谱
+          <svg class="ic" width="17" height="17" viewBox="0 0 256 256"><path d="M224.49,136.49l-72,72a12,12,0,0,1-17-17L187,140H40a12,12,0,0,1,0-24H187L135.51,64.48a12,12,0,0,1,17-17l72,72A12,12,0,0,1,224.49,136.49Z"/></svg></a>
+        <a class="btn btn-ghost" href="#roles">六职图鉴</a>
+      </div>
+    </div>
+    <div class="hero-stats">
+      <div class="hstat"><b><i id="stHero">133</i></b><span>英雄 Heroes</span></div>
+      <div class="hstat"><b>6</b><span>职业 Roles</span></div>
+      <div class="hstat"><b><i id="stSkin">862</i></b><span>皮肤 Skins</span></div>
+      <div class="hstat"><b>5</b><span>分路 Lanes</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- MARQUEE -->
+<div class="marquee" aria-hidden="true">
+  <div class="marquee-track" id="marquee"></div>
+</div>
+
+<!-- ROLES -->
+<section class="wrap" id="roles">
+  <div class="sec-head rv">
+    <div>
+      <span class="kicker">The Six Roles</span>
+      <h2>六职<em>图鉴</em></h2>
+    </div>
+    <p class="note">王者峡谷的阵容分工：前排承伤、中路爆发、野区猎杀、发育路火力、游走串联，各司其职。</p>
+  </div>
+  <div class="roles-grid" id="rolesGrid"></div>
+</section>
+
+<!-- ARCHIVE -->
+<section class="wrap" id="heroes">
+  <div class="sec-head rv">
+    <div>
+      <span class="kicker">Hero Archive</span>
+      <h2>全英雄<em>档案</em></h2>
+    </div>
+    <p class="note">以官方资料编录，悬停查看皮肤数量，点击令牌进入英雄档案与皮肤长卷。</p>
+  </div>
+
+  <div class="toolbar">
+    <div class="toolbar-inner">
+      <label class="search">
+        <svg class="ic" width="18" height="18" viewBox="0 0 256 256"><path d="M232.49,215.51,185,168a92.12,92.12,0,1,0-17,17l47.53,47.54a12,12,0,0,0,17-17ZM44,112a68,68,0,1,1,68,68A68.07,68.07,0,0,1,44,112Z"/></svg>
+        <input id="searchInput" type="text" placeholder="检索名号 / 称号 / 拼音，如 李白、青莲剑仙、libai" autocomplete="off">
+      </label>
+      <div class="chips" id="chips"></div>
+      <label class="sortsel">排序
+        <select id="sortSel">
+          <option value="default">官序</option>
+          <option value="name">名号</option>
+          <option value="skins">皮肤数</option>
+        </select>
+      </label>
+    </div>
+  </div>
+
+  <div class="result-note" id="resultNote"></div>
+  <div class="grid" id="grid"></div>
+  <div class="empty-state" id="emptyState">
+    <div class="seal">寻</div>
+    <h3>卷中未寻得此英雄</h3>
+    <p id="emptyText">换个名号或称号再试，也可以清除检索回到全谱。</p>
+    <button class="btn btn-gold" id="resetBtn">重置检索</button>
+  </div>
+</section>
+
+<!-- DATA BAND -->
+<section class="databand" id="data">
+  <div class="databand-media"><img src="https://aka.doubaocdn.com/s/aodWBDwbdl" alt="云海中林立的金石碑林，象征英雄谱录"></div>
+  <div class="databand-inner">
+    <span class="kicker rv">Archive in Numbers</span>
+    <h2 class="rv">一卷英雄，<em style="font-style:normal;color:var(--gold)">数字为证</em></h2>
+    <p class="lead rv">以下数字由官方英雄资料实时统计：英雄总数、皮肤总量、职业构成与收藏最丰的英雄。</p>
+    <div class="bignums rv">
+      <div class="bignum"><b data-count="133">0</b><span>位英雄</span></div>
+      <div class="bignum"><b data-count="862">0</b><span>套皮肤</span></div>
+      <div class="bignum"><b data-count="6">0</b><span>大职业</span></div>
+      <div class="bignum"><b data-count="5">0</b><span>条分路</span></div>
+    </div>
+    <div class="data-cols">
+      <div class="dist rv">
+        <h4>职业构成</h4>
+        <div id="distBars"></div>
+      </div>
+      <div class="topskin rv">
+        <h4>皮肤藏家 · TOP 5</h4>
+        <div class="topskin-list" id="topSkin"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="foot-grid">
+    <div>
+      <h4>HEROES CODEX · 英雄谱</h4>
+      <p>王者荣耀全英雄金石图鉴，以职业、分路、名号与皮肤长卷编录 133 位英雄。暗金为底，令牌为形，致敬东方 MOBA 的英雄群像。</p>
+    </div>
+    <div>
+      <h4>浏览</h4>
+      <a href="#roles">六职图鉴</a>
+      <a href="#heroes">全英雄档案</a>
+      <a href="#data">谱录数据</a>
+    </div>
+    <div>
+      <h4>职业</h4>
+      <a href="#heroes" data-jump="1">战士</a>
+      <a href="#heroes" data-jump="2">法师</a>
+      <a href="#heroes" data-jump="4">刺客</a>
+      <a href="#heroes" data-jump="5">射手</a>
+    </div>
+    <div>
+      <h4>来源</h4>
+      <a href="https://pvp.qq.com/web201605/herolist.shtml" target="_blank" rel="noopener">王者荣耀官网 · 英雄资料</a>
+      <a href="https://pvp.qq.com/" target="_blank" rel="noopener">pvp.qq.com</a>
+    </div>
+  </div>
+  <div class="wordmark" aria-hidden="true">英雄谱</div>
+  <div class="foot-legal">
+    <span>本页为粉丝自制学习图鉴，非官方页面，不用于商业用途。</span>
+    <span>英雄名称、形象、皮肤图片及相关资料版权归腾讯游戏 ·《王者荣耀》所有，素材源自 pvp.qq.com 与 game.gtimg.cn。</span>
+  </div>
+</footer>
+
+<!-- DETAIL -->
+<div class="scrim" id="scrim"></div>
+<aside class="modal" id="modal" role="dialog" aria-modal="true" aria-label="英雄档案">
+  <div class="modal-hero">
+    <img id="mHeroImg" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='2000' height='2000'%3E%3Crect width='100%25' height='100%25' fill='%23121E19'/%3E%3C/svg%3E" alt="">
+    <div class="skin-name" id="mSkinName"></div>
+    <button class="skin-arrow prev" id="skinPrev" aria-label="上一套皮肤"><svg class="ic" width="20" height="20" viewBox="0 0 256 256"><path d="M168.49,199.51a12,12,0,0,1-17,17l-80-80a12,12,0,0,1,0-17l80-80a12,12,0,0,1,17,17L97,128Z"/></svg></button>
+    <button class="skin-arrow next" id="skinNext" aria-label="下一套皮肤"><svg class="ic" width="20" height="20" viewBox="0 0 256 256"><path d="M184.49,136.49l-80,80a12,12,0,0,1-17-17L159,128,87.51,56.49a12,12,0,1,1,17-17l80,80A12,12,0,0,1,184.49,136.49Z"/></svg></button>
+    <button class="modal-close" id="modalClose" aria-label="关闭"><svg class="ic" width="20" height="20" viewBox="0 0 256 256"><path d="M208.49,191.51a12,12,0,0,1-17,17L128,145,64.49,208.49a12,12,0,0,1-17-17L111,128,47.51,64.49a12,12,0,0,1,17-17L128,111l63.51-63.52a12,12,0,0,1,17,17L145,128Z"/></svg></button>
+    <div class="modal-name"><h3 id="mName"></h3><span class="ti" id="mTitle"></span></div>
+  </div>
+  <div class="modal-body">
+    <div class="meta-grid">
+      <div class="meta-cell">
+        <div class="k">职业 Role</div>
+        <div class="v" id="mRoles"></div>
+      </div>
+      <div class="meta-cell">
+        <div class="k">推荐分路 Lane</div>
+        <div class="v" id="mLanes"></div>
+      </div>
+      <div class="meta-cell">
+        <div class="k">皮肤数量 Skins</div>
+        <div class="v"><span id="mSkinCount" style="font-family:var(--latin);color:var(--gold)"></span> <span style="font-size:13px;color:var(--muted)">套</span></div>
+      </div>
+      <div class="meta-cell">
+        <div class="k">档案编号 No.</div>
+        <div class="v"><span id="mId" style="font-family:var(--latin);font-size:15px;letter-spacing:.12em"></span></div>
+      </div>
+    </div>
+    <p class="desc" id="mDesc"></p>
+    <div class="skin-gallery-head">
+      <h4>皮肤长卷 <b id="mGalleryCount"></b></h4>
+      <span>左右箭头切换 · 点缩略图直选</span>
+    </div>
+    <div class="skin-rail" id="skinRail"></div>
+    <div class="modal-foot">
+      <div class="pager">
+        <button id="prevHero"><svg class="ic" width="16" height="16" viewBox="0 0 256 256"><path d="M228,128a12,12,0,0,1-12,12H69l51.52,51.51a12,12,0,0,1-17,17l-72-72a12,12,0,0,1,0-17l72-72a12,12,0,0,1,17,17L69,116H216A12,12,0,0,1,228,128Z"/></svg>上一位</button>
+        <button id="nextHero">下一位<svg class="ic" width="16" height="16" viewBox="0 0 256 256"><path d="M224.49,136.49l-72,72a12,12,0,0,1-17-17L187,140H40a12,12,0,0,1,0-24H187L135.51,64.48a12,12,0,0,1,17-17l72,72A12,12,0,0,1,224.49,136.49Z"/></svg></button>
+      </div>
+      <a class="official" id="officialLink" target="_blank" rel="noopener">官方资料
+        <svg class="ic" width="16" height="16" viewBox="0 0 256 256"><path d="M204,64V168a12,12,0,0,1-24,0V93L72.49,200.49a12,12,0,0,1-17-17L163,76H88a12,12,0,0,1,0-24H192A12,12,0,0,1,204,64Z"/></svg></a>
+    </div>
+  </div>
+</aside>
+
+<script>
+window.HEROES = [{"e":105,"n":"廉颇","ti":"正义爆轰","t":3,"t2":0,"l":"1|5","p":"lianpo","sk":["正义爆轰","地狱岩魂","无尽征程","寅虎·御盾","功夫炙烤","撼地雄心"]},{"e":106,"n":"小乔","ti":"恋之微风","t":2,"t2":0,"l":"3","p":"xiaoqiao","sk":["恋之微风","万圣前夜","天鹅之梦","纯白花嫁","缤纷独角兽","丁香结","青蛇","音你心动","山海·琳琅生","时之魔女","秘证寻踪"]},{"e":107,"n":"赵云","ti":"苍天翔龙","t":1,"t2":4,"l":"2","p":"zhaoyun","sk":["苍天翔龙","忍●炎影","未来纪元","皇家上将","嘻哈天王","白执事","引擎之心","龙胆","淬星耀世","百木心枪","乘龙铭钟鼎"]},{"e":108,"n":"墨子","ti":"和平守望","t":2,"t2":1,"l":"3|5","p":"mozi","sk":["和平守望","金属风暴","龙骑士","进击墨子号","神迹守卫","降魔","黄金天蝎座"]},{"e":109,"n":"妲己","ti":"魅力之狐","t":2,"t2":0,"l":"3","p":"daji","sk":["魅惑之狐","女仆咖啡","魅力维加斯","仙境爱丽丝","少女阿狸","热情桑巴","时之彼端","紫罗兰之誓","时之奇旅","青丘·九尾","灵卜魔法","愿照·众生和"]},{"e":110,"n":"嬴政","ti":"王者独尊","t":2,"t2":0,"l":"3","p":"yingzheng","sk":["王者独尊","摇滚巨星","暗夜贵公子","优雅恋人","白昼王子","玄雷天君"]},{"e":111,"n":"孙尚香","ti":"千金重弩","t":5,"t2":0,"l":"4","p":"sunshangxiang","sk":["千金重弩","火炮千金","水果甜心","蔷薇恋人","杀手不太冷","末日机甲","沉稳之力","时之恋人","异界灵契","音你闪耀","乘龙问璇玑"]},{"e":112,"n":"鲁班七号","ti":"机关造物","t":5,"t2":0,"l":"4","p":"lubanqihao","sk":["机关造物","木偶奇遇记","福禄兄弟","电玩小子","星空梦想","狮舞东方","黑桃队长","乒乒小将","寅虎·瑞焰","时之奇旅","蔬乡物语","江户川柯南","班班快跑"]},{"e":113,"n":"庄周","ti":"逍遥梦幻","t":6,"t2":3,"l":"5","p":"zhuangzhou","sk":["逍遥幻梦","鲤鱼之梦","蜃楼王","云端筑梦师","奇妙博物学","玄嵩","高山流水","天秀·幻梦","牧神诗旅","锦麟游梦"]},{"e":114,"n":"刘禅","ti":"暴走机关","t":6,"t2":3,"l":"5","p":"liushan","sk":["暴走机关","英喵野望","绅士熊喵","天才门将","秘密基地","唤灵魔甲","电玩·爆裂旋风","鸭鸭历险记"]},{"e":115,"n":"高渐离","ti":"叛逆吟游","t":2,"t2":0,"l":"3","p":"gaojianli","sk":["叛逆吟游","金属狂潮","死亡摇滚","玩趣恶龙","天秀·音浪","燃音魔法"]},{"e":116,"n":"阿轲","ti":"信念之刃","t":4,"t2":0,"l":"2","p":"ake","sk":["信念之刃","爱心护理","暗夜猫娘","致命风华","节奏热浪","迷踪丽影","化蝶舞"]},{"e":117,"n":"钟无艳","ti":"野蛮之锤","t":1,"t2":3,"l":"1|2","p":"zhongwuyan","sk":["野蛮之锤","生化警戒","王者之锤","海滩丽影","超时空战士","聚星闪耀","春野之旅","戍鼓铭心","戍鼓铭心"]},{"e":118,"n":"孙膑","ti":"逆流之时","t":6,"t2":2,"l":"5","p":"sunbin","sk":["逆流之时","未来旅行","天使之翼","妖精王","归虚梦演","天狼运算者","寅虎·展翼","小动物乐团","茶境仙"]},{"e":119,"n":"扁鹊","ti":"善恶怪医","t":2,"t2":1,"l":"3","p":"bianque","sk":["善恶怪医","救世之瞳","化身博士","炼金王","奇幻香踪","无尽旅途","灵蛊蚀心"]},{"e":167,"n":"孙悟空","ti":"齐天大圣","t":4,"t2":0,"l":"2","p":"sunwukong","sk":["齐天大圣","地狱火","西部大镖客","美猴王","至尊宝","全息碎影","大圣娶亲","零号·赤焰","孙行者","齐天大圣","神迹守卫","无相"]},{"e":549,"n":"心魔六耳","ti":"孙悟空命格","t":4,"t2":1,"l":"2|1","p":"xinmoliuer","sk":["心魔六耳"]},{"e":120,"n":"白起","ti":"最终兵器","t":3,"t2":0,"l":"1","p":"baiqi","sk":["最终兵器","白色死神","狰","星夜王子","夜都怪侠","乐园追猎者","苍鳞隐世","死霸装"]},{"e":121,"n":"芈月","ti":"永恒之月","t":2,"t2":1,"l":"1|2","p":"miyue","sk":["永恒之月","红桃皇后","大秦宣太后","重明","白晶晶","幻夜卜梦","浮光幕影","瑰影绮梦"]},{"e":123,"n":"吕布","ti":"无双之魔","t":1,"t2":3,"l":"1","p":"lvbu","sk":["无双之魔","圣诞狂欢","天魔缭乱","末日机甲","猎兽之王","野性能量","御风骁将","怒海麟威","遇见神鼓","曦玄引","逐霄战戟"]},{"e":124,"n":"周瑜","ti":"铁血都督","t":2,"t2":1,"l":"3","p":"zhouyv","sk":["铁血都督","海军大将","真爱至上","赤莲之焰","音你心动","雪夜绮愿","熔金海岸","百相守梦","线条小狗"]},{"e":126,"n":"夏侯惇","ti":"不羁之风","t":3,"t2":1,"l":"1|5|2","p":"xiahoudun","sk":["不羁之风","战争骑士","乘风破浪","无限飓风号","朔风刀","匿光决锋者","霜北刀"]},{"e":127,"n":"甄姬","ti":"洛神降临","t":2,"t2":0,"l":"3","p":"zhenji","sk":["洛神降临","冰雪圆舞曲","花好人间","游园惊梦","幽恒","女儿国国王","落雪兰心","至美·化雀舞","雪境奇遇","逆浪荇歌"]},{"e":128,"n":"曹操","ti":"鲜血枭雄","t":1,"t2":0,"l":"1|2","p":"caocao","sk":["鲜血枭雄","超能战警","幽灵船长","死神来了","烛龙","天狼征服者","决胜大满贯"]},{"e":129,"n":"典韦","ti":"狂战士","t":1,"t2":0,"l":"2","p":"dianwei","sk":["狂战士","黄金武士","穷奇","蓝屏警告","岱宗","铁甲之心","战鼓燎原","铁骨偃魂"]},{"e":130,"n":"宫本武藏","ti":"剑圣","t":1,"t2":4,"l":"2","p":"gongbenwuzang","sk":["剑圣","鬼剑武藏","未来纪元","万象初新","地狱之眼","霸王丸","惊梅引","黑崎一护"]},{"e":131,"n":"李白","ti":"青莲剑仙","t":4,"t2":0,"l":"2","p":"libai","sk":["青莲剑仙","范海辛","千年之狐","凤求凰","敏锐之力","鸣剑·曳影","诗剑行","碎月剑心","谪仙醉月"]},{"e":132,"n":"马可波罗","ti":"远游之枪","t":5,"t2":0,"l":"4","p":"makeboluo","sk":["远游之枪","激情绿茵","逐梦之星","暗影游猎","潮玩牛仔","深海之息","山海·玄木吟","妄想实况","星界特工","怪盗基德"]},{"e":133,"n":"狄仁杰","ti":"断案大师","t":5,"t2":0,"l":"4","p":"direnjie","sk":["断案大师","锦衣卫","魔术师","超时空战士","阴阳师","鹰眼统帅","万华元夜","星际治安官","神器·狴犴令","绮世丹青"]},{"e":134,"n":"达摩","ti":"拳僧","t":1,"t2":3,"l":"1","p":"damo","sk":["拳僧","拳王","大发明家","黄金狮子座","星际陆战队","沙漠行僧","爆烈喵拳"]},{"e":135,"n":"项羽","ti":"霸王","t":3,"t2":1,"l":"1|5","p":"xiangyu","sk":["霸王","帝国元帅","苍穹之光","海滩派对","职棒王牌","霸王别姬","科学大爆炸","无限倾心","苍威无极","九幽镇关"]},{"e":136,"n":"武则天","ti":"女帝","t":2,"t2":0,"l":"3","p":"wuzetian","sk":["女帝","东方不败","海洋之心","倪克斯神谕","神器·明辉仪"]},{"e":139,"n":"老夫子","ti":"万古长明","t":1,"t2":0,"l":"1","p":"laofuzi","sk":["万古长明","潮流仙人","圣诞老人","功夫老勺","醍醐杖","航海奇遇记","百相守梦","藏狐·褐绒"]},{"e":140,"n":"关羽","ti":"一骑当千","t":1,"t2":3,"l":"1","p":"guanyu","sk":["一骑当千","龙腾万里","天启骑士","冰锋战神","武圣","赤影疾锋","百相守梦","决胜骁骑"]},{"e":141,"n":"貂蝉","ti":"绝世舞姬","t":2,"t2":0,"l":"3|1","p":"diaochan","sk":["绝世舞姬","异域舞娘","圣诞恋歌","仲夏夜之梦","逐梦之音","猫影幻舞","遇见胡旋","唤灵魅影","幻阙歌","曦玄引","长夏之忆","馥梦繁花"]},{"e":142,"n":"安琪拉","ti":"暗夜萝莉","t":2,"t2":0,"l":"3","p":"anqila","sk":["暗夜萝莉","玩偶对对碰","魔法小厨娘","心灵骇客","如懿","时之奇旅","追逃游戏","乘龙聚宝船","酷洛米之心","糖果风暴"]},{"e":144,"n":"程咬金","ti":"热烈之斧","t":3,"t2":0,"l":"1","p":"chengyaojin","sk":["热烈之斧","爱与正义","星际陆战队","华尔街大亨","功夫厨神","活力突击","演武夺筹","无双福将","暖冬絮语","群星魔术团"]},{"e":146,"n":"露娜","ti":"月光之女","t":4,"t2":2,"l":"2","p":"luna","sk":["月光之女","哥特玫瑰","绯红之刃","紫霞仙子","一生所爱","瓷语鉴心","启示之音","霜月吟","命运加冕"]},{"e":148,"n":"姜子牙","ti":"封神者","t":2,"t2":0,"l":"3|5","p":"jiangziya","sk":["太古魔导","时尚教父","炽热元素使","闲日渔趣","天穹之誓","星梦巡礼"]},{"e":149,"n":"刘邦","ti":"双面君主","t":3,"t2":2,"l":"1|5","p":"liubang","sk":["双面君主","圣殿之光","德古拉伯爵","夺宝奇兵","虎啸剑宗","剑破天穹"]},{"e":150,"n":"韩信","ti":"国士无双","t":4,"t2":0,"l":"2","p":"hanxin","sk":["国士无双","街头霸王","教廷特使","白龙吟","逐梦之影","飞衡","傲雪梅枪","弑枪猎影","群星魔术团"]},{"e":152,"n":"王昭君","ti":"冰雪之华","t":2,"t2":0,"l":"3|5","p":"wangzhaojun","sk":["冰雪之华","精灵公主","偶像歌手","凤凰于飞","幻想奇妙夜","乞巧织情","午后时光","星穹之声","映山客","长夜焕生"]},{"e":153,"n":"兰陵王","ti":"暗影刀锋","t":4,"t2":0,"l":"2","p":"lanlingwang","sk":["暗影刀锋","隐刃","暗隐猎兽者","驯魔猎人","默契交锋","金庭之子","影龙天霄","雾影缉谜"]},{"e":154,"n":"花木兰","ti":"传说之刃","t":1,"t2":0,"l":"1","p":"huamulan","sk":["传说之刃","剑舞者","兔女郎","水晶猎龙者","青春决赛季","冠军飞将","瑞麟志","默契交锋","九霄神辉","燃星之曲"]},{"e":156,"n":"张良","ti":"言灵之书","t":2,"t2":0,"l":"3|5","p":"zhangliang","sk":["言灵之书","天堂福音","一千零一夜","幽兰居士","黄金白羊座","缤纷绘卷","千筹问战","古海寻踪","灵野札记"]},{"e":157,"n":"不知火舞","ti":"明媚烈焰","t":4,"t2":2,"l":"3","p":"buzhihuowu","sk":["明媚烈焰","魅语","绯月行","花合斗"]},{"e":162,"n":"娜可露露","ti":"鹰之守护","t":4,"t2":0,"l":"2","p":"nakelulu","sk":["鹰之守护","晚萤","前尘镜"]},{"e":163,"n":"橘右京","ti":"神梦一刀","t":4,"t2":1,"l":"2|1","p":"jvyoujing","sk":["神梦一刀","修罗","枫霜尽"]},{"e":166,"n":"亚瑟","ti":"圣骑之力","t":1,"t2":3,"l":"1|2","p":"yase","sk":["圣骑之力","死亡骑士","狮心王","心灵战警","潮玩骑士王","追逃游戏","鸿运当头","动物派对","布丁狗之誓"]},{"e":168,"n":"牛魔","ti":"精英酋长","t":6,"t2":3,"l":"5","p":"niumo","sk":["精英酋长","西部大镖客","制霸全明星","御旌","奔雷神使","牛运亨通","星界战将","小牛鸭"]},{"e":169,"n":"后羿","ti":"半神之弓","t":5,"t2":0,"l":"4","p":"houyi","sk":["半神之弓","精灵王","阿尔法小队","辉光之辰","黄金射手座","如梦令","圣弓游侠","无尽星芒","完美运算","石田雨龙"]},{"e":170,"n":"刘备","ti":"仁德义枪","t":1,"t2":0,"l":"2","p":"liubei","sk":["仁德义枪","万事如意","纽约教父","汉昭烈帝","时之恋人","潮玩造梦师","百相守梦","异域游侠","浪漫序章"]},{"e":171,"n":"张飞","ti":"禁血狂兽","t":3,"t2":6,"l":"5","p":"zhangfei","sk":["禁血狂兽","五福同心","乱世虎臣","虎魂","百相守梦","兔狲·蓬尾"]},{"e":173,"n":"李元芳","ti":"王都密探","t":5,"t2":0,"l":"4|2","p":"liyuanfang","sk":["王都密探","特种部队","黑猫爱糖果","逐浪之夏","银河之约","飞鸢探春","云中旅人","妄想特派","匿光侦查者","蔬乡物语"]},{"e":174,"n":"虞姬","ti":"森之风灵","t":5,"t2":0,"l":"4","p":"yuji","sk":["森之风灵","加勒比小姐","霸王别姬","凯尔特女王","云霓雀翎","启明星使","无限倾心","神鉴启示录","夏日便利店","愿照·岁时盈","溯影追猎"]},{"e":175,"n":"钟馗","ti":"虚灵城判","t":6,"t2":3,"l":"5","p":"zhongkui","sk":["虚灵城判","地府判官","神迹守卫","驱傩正仪","乐园奇幻夜","虚灵犬护"]},{"e":178,"n":"杨戬","ti":"根源之目","t":1,"t2":0,"l":"1|2","p":"yangjian","sk":["根源之目","埃及法老","永曜之星","次元傲视","天秀·启明","潮玩骑兵","破阵·退雄兵"]},{"e":183,"n":"雅典娜","ti":"圣域余晖","t":1,"t2":4,"l":"2","p":"yadianna","sk":["圣域余晖","战争女神","冰冠公主","神奇女侠","单词大作战","黎明之约","潮玩士官长"]},{"e":184,"n":"蔡文姬","ti":"天籁弦音","t":6,"t2":2,"l":"5","p":"caiwenji","sk":["天籁弦音","蔷薇王座","奇迹圣诞","舞动绿茵","繁星吟游","花朝如约","电玩·兔顽号","夏日便利店","愿照·福禄聚","奇遇梦乡"]},{"e":186,"n":"太乙真人","ti":"炼金大师","t":6,"t2":3,"l":"5","p":"taiyizhenren","sk":["炼金大师","圆桌骑士","饕餮","华丽摇滚","劲辣红锅","谧流熔炉"]},{"e":180,"n":"哪吒","ti":"桀骜炎枪","t":1,"t2":3,"l":"1|2","p":"nezha","sk":["桀骜炎枪","三太子","逐梦之翼","次元突破","雪上飞焰","热血海滩"]},{"e":190,"n":"诸葛亮","ti":"绝代智谋","t":2,"t2":0,"l":"3|2","p":"zhugeliang","sk":["绝代智谋","星航指挥官","黄金分割率","武陵仙君","掌控之力","时雨天司","星域神启","鹤羽星尊","天机白泽"]},{"e":192,"n":"黄忠","ti":"燃魂重炮","t":5,"t2":0,"l":"4","p":"huangzhong","sk":["燃魂重炮","芝加哥教父","烈魂","火炮绅士","怒海冲锋"]},{"e":191,"n":"大乔","ti":"沧海之曜","t":6,"t2":2,"l":"5|3","p":"daqiao","sk":["沧海之曜","伊势巫女","守护之力","猫狗日记","白蛇","白鹤梁神女","挚爱花嫁","时之奇旅","乘龙忆丹青","绒语心约"]},{"e":187,"n":"东皇太一","ti":"噬灭日蚀","t":6,"t2":2,"l":"5|1","p":"donghuangtaiyi","sk":["噬灭日蚀","东海龙王","逐梦之光","灼幽烈阳","噬灭天穹","金福满堂"]},{"e":182,"n":"干将莫邪","ti":"淬命双剑","t":2,"t2":0,"l":"3","p":"ganjiangmoye","sk":["淬命双剑","第七人偶","冰霜恋舞曲","久胜战神","真爱魔法","胡桃夹子","画中仙","雾都夜雨","千山共赴"]},{"e":189,"n":"鬼谷子","ti":"万物有灵","t":6,"t2":2,"l":"5","p":"guiguzi","sk":["万物有灵","阿摩司公爵","幻乐之宴","原初探秘者","五谷丰年","天穹祈灯","克喵","谜偶窥秘"]},{"e":193,"n":"铠","ti":"破灭刃锋","t":1,"t2":3,"l":"2|1","p":"kai","sk":["破灭刃锋","龙域领主","曙光守护者","青龙志","绛天战甲","银白咏叹调","琥珀纪元","冥王哈迪斯"]},{"e":196,"n":"百里守约","ti":"静谧之眼","t":5,"t2":4,"l":"4","p":"bailishouyue","sk":["静谧之眼","绝影神枪","特工魅影","朱雀志","碎云","真我赫兹","雪豹·霜爪"]},{"e":195,"n":"百里玄策","ti":"嚣狂之镰","t":4,"t2":0,"l":"2","p":"bailixuance","sk":["嚣狂之镰","威尼斯狂欢","白虎志","原初追逐者","热力回旋","超元猎域","百相守梦"]},{"e":194,"n":"苏烈","ti":"不屈铁壁","t":6,"t2":3,"l":"5|1","p":"sulie","sk":["不屈铁壁","爱与和平","坚韧之力","玄武志","千军破阵","春野闲踪"]},{"e":198,"n":"梦奇","ti":"入梦之灵","t":3,"t2":2,"l":"1|2","p":"mengqi","sk":["入梦之灵","美梦成真","胖达荣荣","天降福星","顽趣"]},{"e":179,"n":"女娲","ti":"至高创世","t":2,"t2":0,"l":"3","p":"nvwa","sk":["至高创世","尼罗河女神","朔望之晖","补天","愿照·千秋盛"]},{"e":501,"n":"明世隐","ti":"灵魂劫卜","t":6,"t2":0,"l":"5","p":"mingshiyin","sk":["灵魂劫卜","占星术士","虹云星官","疑决卦","吟游魔法","夜落电台","景韶洛都"]},{"e":199,"n":"公孙离","ti":"幻舞玲珑","t":5,"t2":0,"l":"4","p":"gongsunli","sk":["幻舞玲珑","花间舞","蜜橘之夏","无限星赏官","祈雪灵祝","玉兔公主","记忆之芯","离恨烟","云诺千山","涂山容容"]},{"e":176,"n":"杨玉环","ti":"霓裳风华","t":2,"t2":0,"l":"3|5|2","p":"yangyuhuan","sk":["风华霓裳","霓裳曲","遇见飞天","寅虎·心曲","银翎春语"]},{"e":502,"n":"裴擒虎","ti":"六合虎拳","t":4,"t2":0,"l":"2","p":"peiqinhu","sk":["六合虎拳","街头霸王","梅西","天狼狩猎者","李小龙","寅虎·赤拳","擒涛扼浪","祥瑞亨通"]},{"e":197,"n":"弈星","ti":"天元之弈","t":2,"t2":0,"l":"3","p":"yixing","sk":["天元之弈","踏雪寻梅","混沌棋","滕王阁序","炽奕燎原","万物之道","守夜人"]},{"e":503,"n":"狂铁","ti":"战车意志","t":1,"t2":3,"l":"1","p":"kuangtie","sk":["战车意志","命运角斗场","御狮","特工战影","电玩高手","龙之律动"]},{"e":504,"n":"米莱狄","ti":"筑城者","t":2,"t2":0,"l":"3","p":"milaidi","sk":["筑城者","精准探案法","御霄","胡桃异想国","契约魔法","完美假期","怪诞之夜"]},{"e":125,"n":"元歌","ti":"无间傀儡","t":4,"t2":0,"l":"1","p":"yuange","sk":["无间傀儡","午夜歌剧院","云间偶戏","无心","诡秘之主"]},{"e":510,"n":"孙策","ti":"光明之海","t":3,"t2":1,"l":"1|2","p":"sunce","sk":["光明之海","海之征途","猫狗日记","末日机甲","挚爱之约","乘龙淬吴钩","时之奇旅","百相守梦"]},{"e":137,"n":"司马懿","ti":"寂灭之心","t":4,"t2":2,"l":"2|3","p":"simayi","sk":["寂灭之心","魇语军师","暗渊魔法","九山相柳"]},{"e":509,"n":"盾山","ti":"无尽之盾","t":6,"t2":3,"l":"5","p":"dunshan","sk":["无尽之盾","极冰防御线","御銮","圆桌骑士","梦圆繁星"]},{"e":508,"n":"伽罗","ti":"破魔之箭","t":5,"t2":0,"l":"4","p":"jialuo","sk":["破魔之箭","花见巫女","箭羽风息","太华","天狼溯光者","炽翼辉光","琥珀纪元"]},{"e":312,"n":"沈梦溪","ti":"爆弹怪猫","t":2,"t2":0,"l":"3","p":"shenmengxi","sk":["爆弹怪猫","棒球奇才","鲨炮海盗猫","星空之诺","月团寄思","大漠名商","匿光破解者","龙舞盛年","鸭鸭历险记"]},{"e":507,"n":"李信","ti":"谋世之战","t":1,"t2":0,"l":"1","p":"lixin","sk":["谋世之战","灼热之刃","一念神魔","山海·炽霜斩"]},{"e":513,"n":"上官婉儿","ti":"惊鸿之笔","t":2,"t2":0,"l":"3","p":"shangguanwaner","sk":["惊鸿之笔","修竹墨客","梁祝","天狼绘梦者","神器·万象笔","妄想奇谈","群星魔术团"]},{"e":515,"n":"嫦娥","ti":"寒月公主","t":2,"t2":1,"l":"3|1|2","p":"change","sk":["寒月公主","露花倒影","如梦令","拒霜思","暖冬·兔眠","漠中幻影"]},{"e":511,"n":"猪八戒","ti":"无忧猛士","t":3,"t2":0,"l":"1|2","p":"zhubajie","sk":["无忧猛士","年年有余","西部大镖客","猪悟能","潮玩探月行"]},{"e":529,"n":"盘古","ti":"破晓之神","t":1,"t2":0,"l":"2|1","p":"pangu","sk":["破晓之神","创世神祝","重装意志","冰霜神祇","经纬探寻者","敬我三分","撼世英歌"]},{"e":505,"n":"瑶","ti":"鹿灵守心","t":6,"t2":2,"l":"5","p":"yao","sk":["鹿灵守心","森","遇见神鹿","时之祈愿","时之愿境","山海·碧波行","真我赫兹","拾光映像","大耳狗之梦"]},{"e":506,"n":"云中君","ti":"流云之翼","t":4,"t2":0,"l":"2","p":"yunzhongjun","sk":["流云之翼","荷鲁斯之眼","纤云弄巧","时之祈愿","群星魔术团"]},{"e":522,"n":"曜","ti":"星辰之子","t":1,"t2":4,"l":"2|1","p":"dongfangyao","sk":["星辰之子","归虚梦演","云鹰飞将","李逍遥","海·苍雷引"]},{"e":518,"n":"马超","ti":"冷晖之枪","t":1,"t2":0,"l":"1|2","p":"machao","sk":["冷晖之枪","幸存者","神威","无双飞将","琥珀纪元","访茗客"]},{"e":523,"n":"西施","ti":"幻纱之灵","t":2,"t2":0,"l":"3","p":"xishi","sk":["幻纱之灵","归虚梦演","诗语江南","游龙清影","玲珑珍味","至美·乘鲤谣","雪境奇遇","续相思","织梦人"]},{"e":525,"n":"鲁班大师","ti":"神匠","t":6,"t2":3,"l":"5","p":"lubandashi","sk":["神匠","归虚梦演","乓乓大师","匿光启智者","探海日志"]},{"e":524,"n":"蒙犽","ti":"烈炮小子","t":5,"t2":0,"l":"4","p":"mengya","sk":["烈炮小子","归虚梦演","狂想玩偶喵","龙鼓争鸣","胡桃狂想曲","百解令","顽岩魄"]},{"e":531,"n":"镜","ti":"破镜之刃","t":4,"t2":0,"l":"2","p":"jing","sk":["破镜之刃","冰刃幻境","炽阳神光","匿光追影者","玫瑰异探","真我赫兹","青焰无极"]},{"e":527,"n":"蒙恬","ti":"秩序统将","t":3,"t2":0,"l":"1","p":"mengtian","sk":["秩序统将","秩序猎龙将","蔚蓝守将","荣光圣徽","苍云破阵"]},{"e":533,"n":"阿古朵","ti":"山林之子","t":5,"t2":0,"l":"2|4","p":"aguduo","sk":["山林之子","熊喵少女","顽趣","江河有灵","布丁狗之约"]},{"e":536,"n":"夏洛特","ti":"玫瑰剑士","t":1,"t2":0,"l":"1","p":"xialuote","sk":["玫瑰剑士","永昼","浮生妄"]},{"e":528,"n":"澜","ti":"鲨之猎刃","t":4,"t2":1,"l":"2","p":"lan","sk":["鲨之猎刃","孤猎","赏金猎手","电玩·雷克斯","逐花归海","愿照·九州拓"]},{"e":537,"n":"司空震","ti":"雷霆之王","t":1,"t2":2,"l":"1|2","p":"sikongzhen","sk":["雷霆之王","启蛰","地狱燃心","愿照·山河定"]},{"e":155,"n":"艾琳","ti":"精灵之舞","t":5,"t2":0,"l":"4","p":"ailin","sk":["精灵之舞","女武神","陌上桑"]},{"e":538,"n":"云缨","ti":"燎原之心","t":1,"t2":4,"l":"2","p":"yunying","sk":["燎原之心","赤焰之缨","鹤归松栖","幻光神枪","赞萌露比"]},{"e":540,"n":"金蝉","ti":"渡世行者","t":2,"t2":0,"l":"3|5","p":"jinchan","sk":["渡世行者","前尘","唐三藏"]},{"e":542,"n":"暃","ti":"玉城之子","t":4,"t2":0,"l":"2","p":"fei","sk":["玉城之子","碧珀绯影","星界游侠","埋骨钱","朽木白哉"]},{"e":534,"n":"桑启","ti":"萤火之旅","t":6,"t2":2,"l":"5","p":"sangqi","sk":["萤火之旅","画中游","海盐诗旅","奇遇星旅","鸣野蒿","线条小狗"]},{"e":548,"n":"戈娅","ti":"沙海飞舟","t":5,"t2":0,"l":"4","p":"geya","sk":["沙海飞舟","危途狂花","驭风魔法","玫蓝誓约"]},{"e":521,"n":"海月","ti":"永夜之心","t":2,"t2":0,"l":"3","p":"haiyue","sk":["永夜之心","幻泉雾影","浮梦罗烟","王牌新星","金乌负日"]},{"e":544,"n":"赵怀真","ti":"自在之心","t":1,"t2":0,"l":"2|1|5","p":"zhaohuaizhen","sk":["自在之心","太极少年","鹤归松栖"]},{"e":545,"n":"莱西奥","ti":"火鹰船长","t":5,"t2":0,"l":"4","p":"laixiao","sk":["火鹰船长","西部游侠","末日机甲","踏浪烽翎"]},{"e":564,"n":"姬小满","ti":"武道奇才","t":1,"t2":0,"l":"1","p":"jixiaoman","sk":["武道奇才","零食大作战","妄想食味","战舞者","飞车小橘子","小满鸭"]},{"e":514,"n":"亚连","ti":"追忆之刃","t":1,"t2":3,"l":"1","p":"yalian","sk":["追忆之刃","破局者","落雪白狼","破空之剑"]},{"e":159,"n":"朵莉亚","ti":"人鱼之歌","t":6,"t2":2,"l":"5","p":"duoliya","sk":["人鱼之歌","金色潮汐","心动手记","幻珠鲛人"]},{"e":563,"n":"海诺","ti":"命运之引","t":1,"t2":2,"l":"3|1","p":"hainuo","sk":["命运之引","时空谍影","心动手记"]},{"e":519,"n":"敖隐","ti":"凌霄真龙","t":5,"t2":0,"l":"4","p":"aoyin","sk":["凌霄真龙"]},{"e":517,"n":"大司命","ti":"肃归之戈","t":1,"t2":0,"l":"2|1","p":"dasiming","sk":["肃归之戈","暗都幽影","东方月初","死亡执政官"]},{"e":582,"n":"元流之子(法师)","ti":"万妙之心","t":2,"t2":0,"l":"3","p":"yuanliuzhizi_magic","sk":["万妙之心"]},{"e":581,"n":"元流之子(坦克)","ti":"止戈之道","t":3,"t2":0,"l":"1|2","p":"yuanliuzhizi_tank","sk":["止戈之道"]},{"e":577,"n":"少司缘","ti":"聆愿之祝","t":6,"t2":0,"l":"5","p":"shaosiyuan","sk":["聆愿之祝","涂山红红","灵卦秘语"]},{"e":558,"n":"影","ti":"黯羽东君","t":1,"t2":0,"l":"1|2","p":"ying","sk":["黯羽东君","魅影绮裳"]},{"e":177,"n":"苍","ti":"苍狼末裔","t":5,"t2":0,"l":"4|2","p":"cang","sk":["苍狼末裔","维京掠夺者","苍林狼骑"]},{"e":550,"n":"空空儿","ti":"笑面诡手","t":6,"t2":0,"l":"5","p":"kongkonger","sk":["笑面诡手","戏梦巡演"]},{"e":584,"n":"元流之子(射手)","ti":"沉舟之志","t":5,"t2":0,"l":"4","p":"yuanliuzhizi_archer","sk":["沉舟之志"]},{"e":151,"n":"孙权","ti":"定旌之谋","t":5,"t2":0,"l":"4","p":"sunquan","sk":["定旌之谋"]},{"e":172,"n":"蚩奼","ti":"五兵之主","t":1,"t2":0,"l":"1|2","p":"chicha","sk":["五兵之主","极光幻客"]},{"e":585,"n":"元流之子(辅助)","ti":"守望之诺","t":6,"t2":0,"l":"5","p":"yuanliuzhizi_support","sk":["守望之诺"]},{"e":188,"n":"大禹","ti":"鼎镇山河","t":6,"t2":3,"l":"5","p":"dayu","sk":["鼎镇山河"]},{"e":583,"n":"元流之子(刺客)","ti":"守望之诺","t":6,"t2":0,"l":"2","p":"yuanliuzhizi_assassin","sk":["破局之识"]},{"e":547,"n":"卢雅那","ti":"蛇焰使者","t":5,"t2":0,"l":"5","p":"luyana","sk":["蛇焰使者"]},{"e":138,"n":"王维","ti":"空山遗客","t":2,"t2":0,"l":"2","p":"wangwei","sk":["空山遗客"]}];
+</script>
+<script>
+/* ================= 常量与数据 ================= */
+const CDN_H = e => `https://game.gtimg.cn/images/yxzj/img201606/heroimg/${e}/${e}.jpg`;
+const CDN_S = (e,i) => `https://game.gtimg.cn/images/yxzj/img201606/skin/hero-info/${e}/${e}-bigskin-${i}.jpg`;
+const ROLES = {
+  1:{n:'战士',en:'WARRIOR',c:'var(--c-warrior)',desc:'攻防兼备的近战多面手，活跃于对抗路与野区，兼具持续输出、带线牵制与切入能力，是阵容里能抗能打的锋线。',rep:[107,123,128,129,154,140]},
+  2:{n:'法师',en:'MAGE',c:'var(--c-mage)',desc:'中路法术核心，凭借范围伤害与硬控主导中路节奏，团战中提供爆发与控制，身板相对脆弱、依赖站位与保护。',rep:[106,109,141,152,136,127]},
+  3:{n:'坦克',en:'TANK',c:'var(--c-tank)',desc:'前排壁垒，生命与抗性厚实，掌握开团与反手控制，用身躯为后排承伤、创造安全的输出空间。',rep:[105,120,135,144,126,149]},
+  4:{n:'刺客',en:'ASSASSIN',c:'var(--c-assassin)',desc:'高机动、高爆发的猎手，游走于野区与侧翼，伺机突进秒杀敌方法师与射手，再于乱军之中从容脱身。',rep:[131,150,116,153,146,167]},
+  5:{n:'射手',en:'MARKSMAN',c:'var(--c-marks)',desc:'发育路远程物理核心，前期安心发育、后期接管团战，以持续的远程火力在保护下摧毁前排与防御塔。',rep:[111,112,132,133,169]},
+  6:{n:'辅助',en:'SUPPORT',c:'var(--c-support)',desc:'游走位的节奏大师，承担视野、治疗、护盾、开团与保护，以功能性串联全队、护航核心成长。',rep:[113,114,118,168]}
+};
+const LANES = {1:'对抗路',2:'打野',3:'中路',4:'发育路',5:'游走'};
+const HEROES = window.HEROES || [];
+const byE = Object.fromEntries(HEROES.map(h=>[h.e,h]));
+const totalSkins = HEROES.reduce((s,h)=>s+h.sk.length,0);
+document.getElementById('hHeroes').textContent = HEROES.length;
+document.getElementById('hSkins').textContent = totalSkins;
+document.getElementById('stHero').textContent = HEROES.length;
+document.getElementById('stSkin').textContent = totalSkins;
+
+/* ================= 首屏浮卡 ================= */
+[[131,'hf1','hfn1','hft1'],[141,'hf2','hfn2','hft2'],[150,'hf3','hfn3','hft3']].forEach(([e,img,nm,ti])=>{
+  const h=byE[e]; if(!h) return;
+  const fel=document.getElementById(img);
+  fel.onerror=()=>{fel.onerror=null;fel.src=CDN_H(e);};
+  fel.src=CDN_S(e,1);
+  fel.alt=h.n;
+  document.getElementById(nm).textContent=h.n;
+  document.getElementById(ti).textContent=h.ti;
+});
+
+/* ================= 跑马灯：英雄名号 ================= */
+(function(){
+  const picks = HEROES.filter((_,i)=>i%3===0).slice(0,40);
+  const seg = picks.map(h=>`<b>${h.ti}</b>${h.n}<i>✦</i>`).join('');
+  document.getElementById('marquee').innerHTML = `<span>${seg}</span><span>${seg}</span>`;
+})();
+
+/* ================= 职业图鉴 ================= */
+function renderRoles(){
+  const counts={};HEROES.forEach(h=>counts[h.t]=(counts[h.t]||0)+1);
+  document.getElementById('rolesGrid').innerHTML = Object.entries(ROLES).map(([t,r])=>`
+    <article class="role rv" style="--rc:${r.c}" data-role="${t}" tabindex="0">
+      <div class="role-top">
+        <div class="role-seal">${r.n[0]}</div>
+        <div><h3>${r.n}</h3><span class="en latin">${r.en}</span></div>
+        <div class="role-num"><b>${counts[t]||0}</b><br><span>位英雄</span></div>
+      </div>
+      <p>${r.desc}</p>
+      <div class="role-reps">
+        ${r.rep.map(e=>byE[e]?`<img src="${CDN_H(e)}" alt="${byE[e].n}" title="${byE[e].n} · ${byE[e].ti}" loading="lazy">`:'').join('')}
+      </div>
+      <span class="role-go">查阅 ${counts[t]||0} 位${r.n}
+        <svg class="ic" width="15" height="15" viewBox="0 0 256 256"><path d="M224.49,136.49l-72,72a12,12,0,0,1-17-17L187,140H40a12,12,0,0,1,0-24H187L135.51,64.48a12,12,0,0,1,17-17l72,72A12,12,0,0,1,224.49,136.49Z"/></svg></span>
+    </article>`).join('');
+  document.querySelectorAll('.role').forEach(el=>{
+    const go=()=>selectRole(+el.dataset.role);
+    el.addEventListener('click',go);
+    el.addEventListener('keydown',e=>{if(e.key==='Enter')go()});
+  });
+}
+
+/* ================= 筛选 / 搜索 / 排序 ================= */
+const state={role:0,q:'',sort:'default'};
+const grid=document.getElementById('grid');
+const emptyState=document.getElementById('emptyState');
+const resultNote=document.getElementById('resultNote');
+
+function renderChips(){
+  const counts={0:HEROES.length};HEROES.forEach(h=>counts[h.t]=(counts[h.t]||0)+1);
+  const chip=(t,label)=>`<button class="chip" aria-pressed="${state.role===t}" data-role="${t}">${label}<span class="n">${counts[t]||0}</span></button>`;
+  document.getElementById('chips').innerHTML =
+    chip(0,'全部')+[1,2,3,4,5,6].map(t=>chip(t,ROLES[t].n)).join('');
+}
+function currentList(){
+  let list=HEROES.slice();
+  if(state.role) list=list.filter(h=>h.t===state.role||h.t2===state.role);
+  const q=state.q.trim().toLowerCase();
+  if(q) list=list.filter(h=>(h.n+h.ti+h.p).toLowerCase().includes(q));
+  if(state.sort==='name') list.sort((a,b)=>a.n.localeCompare(b.n,'zh'));
+  else if(state.sort==='skins') list.sort((a,b)=>b.sk.length-a.sk.length);
+  return list;
+}
+function renderGrid(){
+  const list=currentList();
+  resultNote.innerHTML = list.length
+    ? `共检索到 <b>${list.length}</b> 位英雄${state.role?` · ${ROLES[state.role].n}`:''}${state.q?` · “${state.q}”`:''}`
+    : '';
+  emptyState.classList.toggle('show',list.length===0);
+  document.getElementById('emptyText').textContent =
+    state.q? `卷中未寻得与“${state.q}”相关的英雄，换个名号或称号再试。`:'当前筛选下暂无英雄。';
+  grid.innerHTML = list.map((h,i)=>{
+    const r=ROLES[h.t];
+    return `<article class="card" data-e="${h.e}" role="button" tabindex="0" aria-label="${h.n} ${h.ti}" style="--d:${Math.min(i,14)*35}ms">
+      <div class="card-media">
+        <span class="badge-role" style="--rc:${r.c}">${r.n[0]}</span>
+        <span class="badge-skin">${h.sk.length} SKINS</span>
+        <img class="poster" src="${CDN_S(h.e,1)}" alt="${h.n} · ${h.ti}" loading="lazy"
+             onload="if(this.naturalWidth&&this.naturalWidth<200){this.closest('.card-media').classList.add('noimg');this.remove()}"
+             onerror="if(!this.dataset.fb){this.dataset.fb=1;this.src='${CDN_H(h.e)}'}else{this.closest('.card-media').classList.add('noimg')}">
+        <span class="card-fallback">${h.n}</span>
+      </div>
+      <span class="card-view">查看档案
+        <svg class="ic" width="14" height="14" viewBox="0 0 256 256"><path d="M224.49,136.49l-72,72a12,12,0,0,1-17-17L187,140H40a12,12,0,0,1,0-24H187L135.51,64.48a12,12,0,0,1,17-17l72,72A12,12,0,0,1,224.49,136.49Z"/></svg></span>
+      <div class="card-body"><h3>${h.n}</h3><div class="ti">${h.ti}</div></div>
+    </article>`;
+  }).join('');
+  grid.querySelectorAll('.card').forEach(el=>{
+    const go=()=>openDetail(+el.dataset.e);
+    el.addEventListener('click',go);
+    el.addEventListener('keydown',e=>{if(e.key==='Enter')go()});
+  });
+}
+function selectRole(t){
+  state.role=t;
+  document.querySelectorAll('.chip').forEach(c=>c.setAttribute('aria-pressed',c.dataset.role==String(t)));
+  renderGrid();
+  document.getElementById('heroes').scrollIntoView({behavior:'smooth',block:'start'});
+}
+document.getElementById('chips').addEventListener('click',e=>{
+  const c=e.target.closest('.chip');if(!c)return;selectRole(+c.dataset.role);
+});
+document.getElementById('searchInput').addEventListener('input',e=>{state.q=e.target.value;renderGrid();});
+document.getElementById('sortSel').addEventListener('change',e=>{state.sort=e.target.value;renderGrid();});
+document.getElementById('resetBtn').addEventListener('click',()=>{
+  state.q='';state.role=0;state.sort='default';
+  document.getElementById('searchInput').value='';
+  document.getElementById('sortSel').value='default';
+  renderChips();renderGrid();
+});
+
+/* ================= 详情弹窗 ================= */
+const modal=document.getElementById('modal'),scrim=document.getElementById('scrim');
+let curE=null,curSkin=1,curList=[];
+function roleChips(h){
+  const ts=[h.t,h.t2].filter(Boolean);
+  return [...new Set(ts)].map(t=>`<span class="role-chip" style="--rc:${ROLES[t].c}"><span class="dot"></span>${ROLES[t].n}</span>`).join('');
+}
+function openDetail(e,list){
+  const h=byE[e];if(!h)return;
+  curE=e;curSkin=1;curList=(list&&list.length?list:currentList()).map(x=>x.e);
+  renderDetail();
+  modal.classList.add('on');scrim.classList.add('on');document.body.classList.add('locked','modal-open');
+  modal.scrollTop=0;
+}
+function renderDetail(){
+  const h=byE[curE];
+  const mhi=document.getElementById('mHeroImg');
+  mhi.style.display='';
+  mhi.onerror=()=>{mhi.onerror=null;mhi.src=CDN_H(curE);};
+  mhi.src=CDN_S(curE,curSkin);
+  mhi.alt=`${h.n} · ${h.sk[curSkin-1]||h.ti}`;
+  document.getElementById('mSkinName').textContent=h.sk[curSkin-1]||h.ti;
+  document.getElementById('mName').textContent=h.n;
+  document.getElementById('mTitle').textContent=h.ti;
+  document.getElementById('mRoles').innerHTML=roleChips(h);
+  const lanes=(h.l||'').split('|').filter(Boolean).map(x=>LANES[x]).filter(Boolean);
+  document.getElementById('mLanes').innerHTML=(lanes.length?lanes:['—']).map(l=>`<span class="lane-chip">${l}</span>`).join('');
+  document.getElementById('mSkinCount').textContent=h.sk.length;
+  document.getElementById('mId').textContent=String(h.e).padStart(3,'0');
+  document.getElementById('mDesc').textContent=ROLES[h.t].desc;
+  document.getElementById('mGalleryCount').textContent=`· ${h.sk.length}`;
+  document.getElementById('officialLink').href=`https://pvp.qq.com/web201605/herodetail/${h.e}.shtml`;
+  document.getElementById('skinRail').innerHTML=h.sk.map((s,i)=>`
+    <button class="skin-thumb" aria-current="${i+1===curSkin}" data-skin="${i+1}">
+      <img src="${CDN_S(h.e,i+1)}" alt="${s}" loading="lazy" onerror="this.parentElement.style.display='none'">
+      <span>${s}</span>
+    </button>`).join('');
+  document.querySelectorAll('.skin-thumb').forEach(t=>t.addEventListener('click',()=>{curSkin=+t.dataset.skin;renderDetail();}));
+  const rail=document.getElementById('skinRail');
+  const active=rail.querySelector('[aria-current="true"]');if(active)active.scrollIntoView({inline:'center',block:'nearest'});
+}
+function closeDetail(){modal.classList.remove('on');scrim.classList.remove('on');document.body.classList.remove('locked','modal-open');}
+function stepHero(d){
+  const ids=curList.length?curList:HEROES.map(h=>h.e);
+  let i=ids.indexOf(curE);if(i<0)i=0;i=(i+d+ids.length)%ids.length;
+  curE=ids[i];curSkin=1;renderDetail();modal.scrollTop=0;
+}
+document.getElementById('modalClose').addEventListener('click',closeDetail);
+scrim.addEventListener('click',closeDetail);
+document.getElementById('skinPrev').addEventListener('click',()=>{const n=byE[curE].sk.length;curSkin=((curSkin-2+n)%n)+1;renderDetail();});
+document.getElementById('skinNext').addEventListener('click',()=>{const n=byE[curE].sk.length;curSkin=(curSkin%n)+1;renderDetail();});
+document.getElementById('prevHero').addEventListener('click',()=>stepHero(-1));
+document.getElementById('nextHero').addEventListener('click',()=>stepHero(1));
+document.addEventListener('keydown',e=>{
+  if(!modal.classList.contains('on'))return;
+  if(e.key==='Escape')closeDetail();
+  if(e.key==='ArrowLeft')document.getElementById('skinPrev').click();
+  if(e.key==='ArrowRight')document.getElementById('skinNext').click();
+});
+grid.addEventListener('click',e=>{const c=e.target.closest('.card');if(c)openDetail(+c.dataset.e,currentList());});
+
+/* ================= 数据段 ================= */
+function renderData(){
+  const counts={};HEROES.forEach(h=>counts[h.t]=(counts[h.t]||0)+1);
+  const max=Math.max(...Object.values(counts));
+  document.getElementById('distBars').innerHTML=[1,2,3,4,5,6].map(t=>`
+    <div class="dist-row" style="--rc:${ROLES[t].c};--w:${(counts[t]/max*100)}%">
+      <span class="dn"><span class="dot"></span>${ROLES[t].n}</span>
+      <span class="dist-track"><span class="dist-fill"></span></span>
+      <span class="dv">${counts[t]}</span>
+    </div>`).join('');
+  const top=HEROES.slice().sort((a,b)=>b.sk.length-a.sk.length).slice(0,5);
+  document.getElementById('topSkin').innerHTML=top.map((h,i)=>`
+    <div class="ts-row">
+      <span class="rk">0${i+1}</span>
+      <img src="${CDN_H(h.e)}" alt="${h.n}">
+      <span class="nm">${h.n}<small>${h.ti} · ${ROLES[h.t].n}</small></span>
+      <span class="ct">${h.sk.length} 套</span>
+    </div>`).join('');
+}
+
+/* ================= 导航 / 揭示 / 计数 / 视差 ================= */
+const nav=document.getElementById('nav');
+addEventListener('scroll',()=>nav.classList.toggle('solid',scrollY>window.innerHeight*.7),{passive:true});
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}}),
+  {threshold:.12,rootMargin:'0px 0px -6% 0px'});
+document.querySelectorAll('.rv').forEach(el=>io.observe(el));
+const gridIO=io;
+const cio=new IntersectionObserver(es=>es.forEach(e=>{
+  if(!e.isIntersecting)return;cio.unobserve(e.target);
+  const el=e.target,end=+el.dataset.count,t0=performance.now(),dur=1200;
+  (function step(t){const k=Math.min(1,(t-t0)/dur),v=Math.round(end*(1-Math.pow(1-k,3)));
+    el.textContent=v;if(k<1)requestAnimationFrame(step);})(t0);
+}),{threshold:.5});
+document.querySelectorAll('[data-count]').forEach(el=>cio.observe(el));
+addEventListener('scroll',()=>{
+  if(scrollY<innerHeight*1.1)document.querySelectorAll('.hf').forEach(f=>{
+    if(!f.dataset.base){
+      f.dataset.base=f.classList.contains('hf-2')?'rotate(-3deg)'
+        :f.classList.contains('hf-1')?'rotate(2.5deg)':'rotate(1.5deg)';
+    }
+    f.style.transform=f.dataset.base+' translateY('+(scrollY*Number(f.dataset.speed))+'px)';
+  });
+},{passive:true});
+document.querySelectorAll('[data-jump]').forEach(a=>a.addEventListener('click',()=>selectRole(+a.dataset.jump)));
+
+/* ================= 初始化 ================= */
+renderRoles();renderChips();renderGrid();renderData();
+
+/* ================= 截图器真实状态契约 ================= */
+window.__UI_CAPTURE__={
+  states:[
+    {id:'home',label:'首页首屏',go:async()=>{closeDetail();window.scrollTo({top:0,behavior:'instant'});await wait(500);}},
+    {id:'roles',label:'六职图鉴',go:async()=>{document.getElementById('roles').scrollIntoView({behavior:'instant',block:'start'});await wait(700);}},
+    {id:'role-assassin',label:'职业筛选·刺客',go:async()=>{await resetUI();selectRole(4);await wait(900);}},
+    {id:'search-libai',label:'搜索·李白',go:async()=>{await resetUI();const s=document.getElementById('searchInput');
+      s.value='李白';state.q='李白';renderGrid();document.getElementById('heroes').scrollIntoView({behavior:'instant',block:'start'});await wait(900);}},
+    {id:'empty',label:'搜索空态',go:async()=>{await resetUI();const s=document.getElementById('searchInput');
+      s.value='阿斯加德';state.q='阿斯加德';renderGrid();document.getElementById('heroes').scrollIntoView({behavior:'instant',block:'start'});await wait(500);}},
+    {id:'detail-libai',label:'英雄详情·李白',go:async()=>{await resetUI();openDetail(131,HEROES);await wait(1100);}},
+    {id:'data',label:'谱录数据',go:async()=>{document.getElementById('data').scrollIntoView({behavior:'instant',block:'start'});await wait(1000);}}
+  ],
+  reset:async()=>resetUI()
+};
+function wait(ms){return new Promise(r=>setTimeout(r,ms));}
+async function resetUI(){
+  closeDetail();state.q='';state.role=0;state.sort='default';
+  const s=document.getElementById('searchInput');if(s)s.value='';
+  const sel=document.getElementById('sortSel');if(sel)sel.value='default';
+  renderChips();renderGrid();window.scrollTo({top:0,behavior:'instant'});await wait(300);
+}
+</script>
 </body>
 </html>
